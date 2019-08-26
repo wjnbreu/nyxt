@@ -1,11 +1,10 @@
 (defpackage :next.tests
   (:use :common-lisp
         :next
-        :prove))
+        :parachute))
 
 (in-package :next.tests)
 
-(plan nil)
 
 (defparameter *candidates* '("LINK-HINTS" "ACTIVE-HISTORY-NODE" "HISTORY-BACKWARDS"
                              "DID-FINISH-NAVIGATION" "HISTORY-FORWARDS"
@@ -35,61 +34,62 @@
                              "GO-ANCHOR-NEW-BUFFER-FOCUS")
   "existing next commands.")
 
-(subtest "Fuzzy match"
-  (is "help" (first (next::fuzzy-match "hel"
-                                       '("help-mode" "help" "foo-help" "help-foo-bar"))))
-  (is "HELP" (first (next::fuzzy-match "hel"
-                                       *candidates*))
-      "match 'help' with real candidates list")
-  (is "switch-buffer" (first (next::fuzzy-match "swit buf"
+(define-test test-fuzzy-match
+  (is string= "help" (first (next::fuzzy-match "hel"
+                                               '("help-mode" "help" "foo-help" "help-foo-bar")))
+      "first case")
+  (is string= "HELP" (first (next::fuzzy-match "hel"
+                                               *candidates*))
+      "easy case again")
+
+  (is string= "switch-buffer" (first (next::fuzzy-match "swit buf"
                                                 '("about" "switch-buffer-next" "switch-buffer"
                                                   "delete-buffer")))
       "match 'swit buf' (small list)")
-  (is "SWITCH-BUFFER" (first (next::fuzzy-match "swit buf"
+  (is string= "SWITCH-BUFFER" (first (next::fuzzy-match "swit buf"
                                                 *candidates*))
       "match 'swit buf' with real candidates list")
-  (is "switch-buffer" (first (next::fuzzy-match "buf swit"
+  (is string= "switch-buffer" (first (next::fuzzy-match "buf swit"
                                                 '("about" "switch-buffer-next" "switch-buffer"
                                                   "delete-buffer")))
       "reverse match 'buf swit' (small list)")
-  (is "SWITCH-BUFFER" (first (next::fuzzy-match "buf swit"
+  (is string= "SWITCH-BUFFER" (first (next::fuzzy-match "buf swit"
                                                 *candidates*))
       "reverse match 'buf swit' with real candidates list")
 
-  (is "delete-foo" (first (next::fuzzy-match "de"
+  (is string= "delete-foo" (first (next::fuzzy-match "de"
                                              '("some-mode" "delete-foo")))
       "candidates beginning with the first word appear first")
 
-  (is "foo-bar" (first (next::fuzzy-match "foobar"
+  (is string= "foo-bar" (first (next::fuzzy-match "foobar"
                                           '("foo-dash-bar" "foo-bar")))
       "search witout a space. All characters count (small list).")
-  (is "SWITCH-BUFFER" (first (next::fuzzy-match "sbf"
+  (is string= "SWITCH-BUFFER" (first (next::fuzzy-match "sbf"
                                                 *candidates*))
       "search witout a space. All characters count, real list.")
-  (is "FOO-BAR" (first (next::fuzzy-match "FOO"
+  (is string= "FOO-BAR" (first (next::fuzzy-match "FOO"
                                           '("foo-dash-bar" "FOO-BAR")))
-      "input is uppercase (small list)."))
+      "input is uppercase (small list).")
+  )
 
-(subtest "Parse URL"
-  (is "https://next.atlas.engineer" (next::parse-url "https://next.atlas.engineer")
+(define-test test-parse-url
+  (is string= "https://next.atlas.engineer" (next::parse-url "https://next.atlas.engineer")
       "full URL")
-  (is "https://next.atlas.engineer" (next::parse-url "next.atlas.engineer")
+  (is string= "https://next.atlas.engineer" (next::parse-url "next.atlas.engineer")
       "URL without protocol")
-  (is "https://en.wikipedia.org/w/index.php?search=+wikipedia" (next::parse-url "wiki wikipedia")
+  (is string= "https://en.wikipedia.org/w/index.php?search=+wikipedia" (next::parse-url "wiki wikipedia")
       "search engine")
-  (is "https://duckduckgo.com/?q=next+browser" (next::parse-url "next browser")
+  (is string= "https://duckduckgo.com/?q=next+browser" (next::parse-url "next browser")
       "default search engine")
-  (is "https://en.wikipedia.org/w/index.php?search=+wikipedia" (next::parse-url "wiki wikipedia")
+  (is string= "https://en.wikipedia.org/w/index.php?search=+wikipedia" (next::parse-url "wiki wikipedia")
       "wiki search engine")
-  (is "file:///readme.org" (next::parse-url "file:///readme.org")
+  (is string= "file:///readme.org" (next::parse-url "file:///readme.org")
       "local file")
-  (is "https://duckduckgo.com/?q=foo" (next::parse-url "foo")
+  (is string= "https://duckduckgo.com/?q=foo" (next::parse-url "foo")
       "empty domain")
-  (is "https://duckduckgo.com/?q=algo" (next::parse-url "algo")
+  (is string= "https://duckduckgo.com/?q=algo" (next::parse-url "algo")
       "same domain and TLD")
-  (is "http://[1:0:0:2::3:0.]/" (first (next::fuzzy-match "[" '("test1"
+  (is string= "http://[1:0:0:2::3:0.]/" (first (next::fuzzy-match "[" '("test1"
                                                                 "http://[1:0:0:2::3:0.]/"
                                                                 "test2")))
       "match regex meta-characters"))
-
-(finalize)

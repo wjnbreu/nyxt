@@ -156,7 +156,9 @@ test: $(lisp_files)
 		--eval '(ql:quickload :prove-asdf)' \
 		--load next.asd \
 		--eval '(ql:quickload :next)' \
+		--eval '(asdf:test-system :next)' \
 		--eval '(uiop:quit)'
+
 
 .PHONY: clean-deps
 clean-deps:

@@ -1,13 +1,19 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 ;;; next.asd
 
-(asdf:defsystem :next
+(in-package :cl-user)
+(defpackage next-asd
+  (:use :cl :asdf))
+(in-package :next-asd)
+
+(defsystem next
   :version "1.3.0"
   :author "Atlas Engineer LLC"
   :license "BSD 3-Clause"
   :serial t
   :defsystem-depends-on ("trivial-features")
   :depends-on (:alexandria
+               :parachute               ;; TODO: failed without it here
                :bordeaux-threads
                :cl-css
                :cl-json
@@ -32,53 +38,55 @@
                ;; Local systems:
                :next/download-manager)
   :components ((:module "source"
-                :components
-                (;; Core Functionality
-                 (:file "package")
-                 (:file "macro")
-                 (:file "global")
-                 (:file "port")
-                 (:file "remote")
-                 (:file "mode")
-                 (:file "command")
-                 (:file "utility")
-                 (:file "buffer")
-                 (:file "window")
-                 (:file "minibuffer")
-                 (:file "keymap")
-                 ;; Core Packages
-                 (:file "bookmark")
-                 (:file "zoom")
-                 (:file "scroll")
-                 (:file "history")
-                 (:file "search-buffer")
-                 (:file "jump-heading")
-                 (:file "link-hint")
-                 (:file "help")
-                 ;; Core Modes
-                 (:file "application-mode")
-                 (:file "document-mode")
-                 (:file "vi-mode")
-                 (:file "blocker-mode")
-                 (:file "proxy-mode")
-                 (:file "noscript-mode")
-                 (:file "download-mode")
-                 ;; About
-                 (:file "about")
-                 ;; Port Compatibility Layers
-                 (:file "ports/pyqt-webengine" :if-feature :darwin)
-                 (:file "ports/gtk-webkit" :if-feature (:and :unix (:not :darwin)))
-                 ;; Base
-                 (:file "base"))))
+                        :components
+                        ( ;; Core Functionality
+                         (:file "package")
+                         (:file "macro")
+                         (:file "global")
+                         (:file "port")
+                         (:file "remote")
+                         (:file "mode")
+                         (:file "command")
+                         (:file "utility")
+                         (:file "buffer")
+                         (:file "window")
+                         (:file "minibuffer")
+                         (:file "keymap")
+                         ;; Core Packages
+                         (:file "bookmark")
+                         (:file "zoom")
+                         (:file "scroll")
+                         (:file "history")
+                         (:file "search-buffer")
+                         (:file "jump-heading")
+                         (:file "link-hint")
+                         (:file "help")
+                         ;; Core Modes
+                         (:file "application-mode")
+                         (:file "document-mode")
+                         (:file "vi-mode")
+                         (:file "blocker-mode")
+                         (:file "proxy-mode")
+                         (:file "noscript-mode")
+                         (:file "download-mode")
+                         ;; About
+                         (:file "about")
+                         ;; Port Compatibility Layers
+                         (:file "ports/pyqt-webengine" :if-feature :darwin)
+                         (:file "ports/gtk-webkit" :if-feature (:and :unix (:not :darwin)))
+                         ;; Base
+                         (:file "base"))))
   :build-operation "program-op"
   :build-pathname "next"
-  :entry-point "next:entry-point")
+  :entry-point "next:entry-point"
+
+  :in-order-to ((asdf:test-op (asdf:test-op :next/tests))))
 
 #+sb-core-compression
 (defmethod asdf:perform ((o asdf:image-op) (c asdf:system))
   (uiop:dump-image (asdf:output-file o c) :executable t :compression t))
 
-(asdf:defsystem next/download-manager
+(defsystem next/download-manager
   :depends-on (cl-ppcre
                dexador
                log4cl
@@ -90,7 +98,7 @@
                              (:file "engine")
                              (:file "native")))))
 
-(asdf:defsystem next/download-manager/tests
+(defsystem next/download-manager/tests
   :defsystem-depends-on (prove-asdf)
   :depends-on (prove
                download-manager)
@@ -98,3 +106,13 @@
                 :components ((:test-file "tests"))))
   :perform (asdf:test-op (op c) (uiop:symbol-call
                                  :prove-asdf 'run-test-system c)))
+
+(defsystem next/tests
+  :depends-on (:parachute
+               :next)
+  :components ((:module "tests"
+                        :components
+                        ((:test-file "test-utility"))))
+  :description "Test system for Next."
+  ;TODO: no tests found
+  :perform (test-op (op c) (uiop:symbol-call :parachute :test :next.tests)))
