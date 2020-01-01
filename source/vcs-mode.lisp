@@ -155,6 +155,58 @@ CLONE-URI: quri:uri object."
     (error (c)
       (echo-warning "Error cloning ~a: ~a" project-name c))))
 
+;;; Forking GitHub repositories on disk on the button click.
+;;; XXX: we don't have a WebKit endpoint, but it's doable without.
+(define-parenscript ps-add-fork-button-listener ()
+  (setf banner (ps:chain document (query-selector ".repohead-details-container")))
+  (setf forbutton (ps:chain banner (query-selector-all "details") 2))
+  (ps:chain forkbutton (add-event-listener "click"
+                                           (lambda ()
+                                             (ps:chain forkbutton (set-attribute "data-next-clicked" "clicked"))
+                                             nil))))
+
+(define-parenscript ps-get-fork-button-data ()
+  (defun query ()
+    (setf banner (ps:chain document (query-selector ".repohead-details-container")))
+    (setf forbutton (ps:chain banner (query-selector-all "details") 2))
+    (ps:chain forkbutton (get-attribute "data-next-clicked")))
+  (query))
+
+(define-parenscript add-fork-button-listener ()
+  ;TODO: ensure to run this on all old Github buffers, and new ones.
+  ;TODO: when cvs mode is activated. On deactivate, remove all.
+  (ps-add-fork-button-listener))
+
+(defmethod ps-wait-fork-click ((forge (eql :github)))
+  "How can we write async/await with Parenscript?"
+  "async function waitfork() {
+    banner = document.querySelector('.repohead-details-container')
+    forkbutton = banner.querySelectorAll('details')[2]
+    isclicked = forkbutton.getAttribute('data-next-clicked');
+    while (isclicked !== 'clicked') {
+      await sleep(2000);
+      isclicked = forkbutton.getAttribute('data-next-clicked');
+    }
+    // todo
+    console.log('fork button was clicked :)');
+    alert('fork button was clicked :)');
+    return 'clicked';
+  }
+  waitfork();")
+
+(defun fork-button-clicked-cb (response)
+  (format t "~a~&" response)
+  (format t "button clicked"))
+
+(defun wait-fork-click ()
+  (rpc-buffer-evaluate-javascript (current-buffer)
+                                  (ps-wait-fork-click :github)
+                                  :callback #'fork-button-clicked-cb))
+
+(define-parenscript wait-fork-click ()
+  (ps-wait-fork-click)
+  :callback (fork-button-clicked-cb))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (in-package :next)
 
