@@ -289,24 +289,26 @@ This function can be `funcall'ed."
 (defmethod run ((command command) &rest args)
   "Run COMMAND over ARGS and return its result.
 This is blocking, see `run-async' for an asynchronous way to run commands."
-  (let ((channel (make-instance 'chanl:bounded-channel :size 1)))
-    (chanl:pexec ()
-      (chanl:send channel
-                  ;; Bind current buffer for the duration of the command.  This
-                  ;; way, if the user switches buffer after running a command
-                  ;; but before command termination, `current-buffer' will
-                  ;; return the buffer from which the command was invoked.
-                  (with-current-buffer (current-buffer)
-                    (apply #'funcall-safely (command-function command) args))))
-    (chanl:recv channel)))
+  (let ((channel (lparallel:make-channel :fixed-capacity 1)))
+    (lparallel:submit-task
+     channel
+     (lambda ()
+       ;; Bind current buffer for the duration of the command.  This
+       ;; way, if the user switches buffer after running a command
+       ;; but before command termination, `current-buffer' will
+       ;; return the buffer from which the command was invoked.
+       (with-current-buffer (current-buffer)
+         (apply #'funcall-safely (command-function command) args))))
+    (lparallel:receive-result channel)))
 
 (defmethod run-async ((command command) &rest args)
   "Run COMMAND over ARGS asynchronously.
 See `run' for a way to run commands in a synchronous fashion and return the
 result."
-  (chanl:pexec ()
-    (with-current-buffer (current-buffer) ; See `run' for why we bind current buffer.
-      (apply #'funcall-safely (command-function command) args))))
+  (bt:make-thread
+   (lambda ()
+     (with-current-buffer (current-buffer) ; See `run' for why we bind current buffer.
+       (apply #'funcall-safely (command-function command) args)))))
 
 (define-command noop ()                 ; TODO: Replace with ESCAPE special command that allows dispatched to cancel current key stack.
   "A command that does nothing.

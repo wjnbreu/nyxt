@@ -487,12 +487,20 @@ The evaluation may happen on its own instance or on an already running instance.
     (load-lisp (expand-path *init-file-path*) :package (find-package :nyxt-user)))
   (load-or-eval :remote (getf *options* :remote)))
 
+(defun init-kernel (&optional (worker-count 8))
+  "Initialize the download manager.
+This is called automatically from `resolve', but it can also be called manually
+beforehand in order to specify different initialization argument."
+  (setf lparallel:*kernel* (lparallel:make-kernel worker-count :name "nyxt-kernel")))
+
 (defun start-browser (free-args)
   "Load AUTO-CONFIG-FILE.
 Load INIT-FILE if non-nil.
 Instantiate `*browser*'.
 Start Nyxt and load URLS if any.
 Finally,run the `*after-init-hook*'."
+  (unless lparallel:*kernel*
+    (init-kernel))
   (let ((startup-timestamp (local-time:now))
         (startup-error-reporter nil))
     (format t "Nyxt version ~a~&" +version+)

@@ -7,7 +7,7 @@
   :serial t
   :depends-on (:alexandria
                :bordeaux-threads
-               :chanl
+               :lparallel
                :cl-css
                :cl-json
                :cl-markup

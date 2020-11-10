@@ -112,16 +112,22 @@ complete against a search engine."
                                               (str:replace-all " " " " suggestion)
                                               suggestion))
                      nyxt::suggestions))
-       (chanl:send (channel minibuffer) (if multi-selection-p
-                                          nyxt::suggestions
-                                          (first nyxt::suggestions))))
+       (lparallel:submit-task
+        (channel minibuffer)
+        (lambda ()
+          (if multi-selection-p
+              nyxt::suggestions
+              (first nyxt::suggestions)))))
       (nil (when invisible-input-p
-             (chanl:send (channel minibuffer) (input-buffer minibuffer))))))
+             (lparallel:submit-task
+              (channel minibuffer)
+              (lambda () (input-buffer minibuffer)))))))
   (quit-minibuffer minibuffer))
 
 (define-command return-input (&optional (minibuffer (current-minibuffer)))
   "Return with minibuffer input, ignoring the selection."
-  (chanl:send (channel minibuffer) (input-buffer minibuffer))
+  (lparallel:submit-task (channel minibuffer)
+                         (lambda () (input-buffer minibuffer)))
   (quit-minibuffer minibuffer))
 
 (defun quit-minibuffer (&optional (minibuffer (current-minibuffer)))

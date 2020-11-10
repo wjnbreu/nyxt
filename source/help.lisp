@@ -371,25 +371,26 @@ This function can be used as a `window' `input-dispatcher'."
 The list of values is useful when the last result is multi-valued, e.g. (values 'a 'b).
 You need not wrap multiple values in a PROGN, all top-level expression are
 evaluate in order."
-  (let ((channel (make-instance 'chanl:bounded-channel :size 1)))
-    (chanl:pexec ()
-      (chanl:send
-       channel
+  (let ((channel (lparallel:make-channel :fixed-capacity 1)))
+    (lparallel:submit-task
+     channel
+     (lambda ()
        (with-input-from-string (input string)
          (first
           (last
            (loop for object = (read input nil :eof)
                  until (eq object :eof)
                  collect (multiple-value-list  (eval object))))))))
-    (chanl:recv channel)))
+    (lparallel:receive-result channel)))
 
 (defun evaluate-async (string)
   "Like `evaluate' but does not block and does not return the result."
-  (chanl:pexec ()
-    (with-input-from-string (input string)
-      (loop for object = (read input nil :eof)
-            until (eq object :eof)
-            collect (funcall-safely (lambda () (eval object)))))))
+  (bt:make-thread
+   (lambda ()
+     (with-input-from-string (input string)
+       (loop for object = (read input nil :eof)
+             until (eq object :eof)
+             collect (funcall-safely (lambda () (eval object))))))))
 
 (defun error-buffer (title text)
   "Print some help."

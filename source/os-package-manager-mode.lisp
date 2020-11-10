@@ -255,33 +255,34 @@ OBJECTS can be a list of packages, a generation, etc."
           (uiop:process-alive-p process-info))
         (echo "An package operation is already running.  You can cancel it with `cancel-package-operation'.")
         (progn
-          (chanl:pexec ()
-            (let ((process-info (funcall command objects profile))
-                  (mode (find-submode buffer 'os-package-manager-mode)))
-              (setf (nyxt/os-package-manager-mode:current-process-info mode) process-info)
-              (html-set "" buffer)      ; Reset content between operations.
-              (html-write
-               (markup:markup
-                (:style (style buffer))
-                (:h1 title)
-                (:p
-                 (:a :class "button"
-                     :href (lisp-url '(nyxt/os-package-manager-mode:cancel-package-operation))
-                     "Cancel")))
-               buffer)
-              (format-command-stream
-               process-info
-               (lambda (s)
-                 ;; TODO: Make shell formating function and add support for
-                 ;; special characters, e.g. progress bars.
-                 (html-write
-                  (markup:markup
-                   (:code (str:replace-all " " " " s))
-                   (:br))
-                  buffer)))
-              (html-write
-               (markup:markup (:p "Done."))
-               buffer)))
+          (bt:make-thread
+           (lambda ()
+             (let ((process-info (funcall command objects profile))
+                   (mode (find-submode buffer 'os-package-manager-mode)))
+               (setf (nyxt/os-package-manager-mode:current-process-info mode) process-info)
+               (html-set "" buffer)     ; Reset content between operations.
+               (html-write
+                (markup:markup
+                 (:style (style buffer))
+                 (:h1 title)
+                 (:p
+                  (:a :class "button"
+                      :href (lisp-url '(nyxt/os-package-manager-mode:cancel-package-operation))
+                      "Cancel")))
+                buffer)
+               (format-command-stream
+                process-info
+                (lambda (s)
+                  ;; TODO: Make shell formating function and add support for
+                  ;; special characters, e.g. progress bars.
+                  (html-write
+                   (markup:markup
+                    (:code (str:replace-all " " " " s))
+                    (:br))
+                   buffer)))
+               (html-write
+                (markup:markup (:p "Done."))
+                buffer))))
           (set-current-buffer buffer)
           buffer))))
 

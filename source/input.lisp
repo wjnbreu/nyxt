@@ -132,8 +132,9 @@ Return nil to forward to renderer or non-nil otherwise."
                     ;; TODO: This thread is required for search-buffer to list
                     ;; the suggestions properly.  Remove this workaround with
                     ;; the upcoming minibuffer library.
-                    (chanl:pexec ()
-                      (insert (nyxt:current-minibuffer) value)))))
+                    (bt:make-thread
+                     (lambda ()
+                       (insert (nyxt:current-minibuffer) value))))))
               (setf key-stack nil)
               t)
 

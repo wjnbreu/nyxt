@@ -215,12 +215,13 @@ editor executable."))
       (hooks:run-hook *after-init-hook*)
     (error (c)
       (log:error "In *after-init-hook*: ~a" c)))
-  (chanl:pexec ()
-    (funcall-safely (startup-function browser) urls)
-    ;; Set 'init-time at the end of finalize to take the complete startup time
-    ;; into account.
-    (setf (slot-value *browser* 'init-time)
-          (local-time:timestamp-difference (local-time:now) startup-timestamp))))
+  (bt:make-thread
+   (lambda ()
+     (funcall-safely (startup-function browser) urls)
+     ;; Set 'init-time at the end of finalize to take the complete startup time
+     ;; into account.
+     (setf (slot-value *browser* 'init-time)
+           (local-time:timestamp-difference (local-time:now) startup-timestamp)))))
 
 ;; Catch a common case for a better error message.
 (defmethod buffers :before ((browser t))
@@ -234,7 +235,7 @@ This function is meant to be run in the background."
   ;; TODO: Add a (sleep ...)?  If we have many downloads, this loop could result
   ;; in too high a frequency of refreshes.
   (when download-manager:*notifications*
-    (loop for d = (chanl:recv download-manager:*notifications*)
+    (loop for d = (lparallel:receive-result download-manager:*notifications*)
           while d
           when (download-manager:finished-p d)
             do (hooks:run-hook (after-download-hook *browser*))
