@@ -619,6 +619,8 @@ sometimes yields the wrong reasult."
 (define-ffi-generic ffi-generated-input-event-p (window event))
 (define-ffi-generic ffi-within-renderer-thread (browser thunk))
 (define-ffi-generic ffi-kill-browser (browser))
+(define-ffi-generic ffi-buffer-clear-cache (buffer))
+(define-ffi-generic ffi-buffer-delete-renderer-data (buffer))
 (define-ffi-generic ffi-initialize (browser urls startup-timestamp))
 (define-ffi-generic ffi-inspector-show (buffer))
 (define-ffi-generic ffi-print-status (window text))

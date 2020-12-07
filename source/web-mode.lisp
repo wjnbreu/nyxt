@@ -390,6 +390,15 @@ Otherwise go forward to the only child."
           ((functionp (autofill-fill selected-fill))
            (%paste :input-text (funcall (autofill-fill selected-fill)))))))
 
+(define-command clear-cache ()
+  "Clears the renderer cache, deleting all the data stored by it.
+Doesn't delete history, bookmarks, auto-mode rules, because these are
+stored separately from renderer data."
+  (if-confirm ("Clear the cache? This can log you out from websites and slow them down a bit.")
+              (progn
+                (ffi-buffer-clear-cache (current-buffer))
+                (ffi-buffer-delete-renderer-data (current-buffer)))))
+
 (defmethod nyxt:on-signal-notify-uri ((mode web-mode) url)
   (declare (type quri:uri url))
   (unless (or (url-empty-p url)
