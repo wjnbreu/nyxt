@@ -163,7 +163,7 @@
   :depends-on (:nyxt
                :cl-gobject-introspection)
   :pathname "source/"
-  :components ((:file "renderer-g-object-gtk")))
+  :components ((:file "renderer-gobject-gtk")))
 
 (asdf:defsystem :nyxt/qt
   :depends-on (:nyxt
