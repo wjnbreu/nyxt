@@ -159,6 +159,12 @@
   :pathname "source/"
   :components ((:file "renderer-gtk")))
 
+(asdf:defsystem :nyxt/gobject/gtk
+  :depends-on (:nyxt
+               :cl-gobject-introspection)
+  :pathname "source/"
+  :components ((:file "renderer-g-object-gtk")))
+
 (asdf:defsystem :nyxt/qt
   :depends-on (:nyxt
                :cl-webengine
