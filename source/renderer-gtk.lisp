@@ -809,25 +809,32 @@ requested a reload."
       nil
       #'javascript-error-handler))))
 
-(define-ffi-method ffi-buffer-clear-cache ((buffer gtk-buffer))
-  (webkit:webkit-web-context-clear-cache
-   (webkit:webkit-web-view-web-context (gtk-object buffer))))
+(cffi:defcallback clear-do-nothing-callback
+    :void ((source-object :pointer) (result :pointer) (user-data :pointer))
+  (declare (ignore source-object))
+  (let ((callback (find (cffi:pointer-address user-data) webkit::callbacks
+                        :key (function webkit::callback-id))))
+    (handler-case
+        (let* ((clear-result (webkit:webkit-website-data-manager-clear-finish
+                              (webkit:webkit-web-view-get-website-data-manager
+                               (webkit::callback-web-view callback))
+                              result)))
+          (declare (ignore clear-result))
+          (setf webkit::callbacks (delete callback webkit::callbacks))))))
 
-;; TODO: Should probably use `webkit:webkit-webrite-data-manager-clear'.
-(define-ffi-method ffi-buffer-delete-renderer-data ((buffer gtk-buffer))
-  (let ((data-manager (webkit:webkit-web-view-get-website-data-manager (gtk-object buffer))))
-    (dolist (directory
-             (list (webkit:webkit-website-data-manager-base-cache-directory data-manager)
-                   (webkit:webkit-website-data-manager-indexeddb-directory data-manager)
-                   (webkit:webkit-website-data-manager-base-data-directory data-manager)
-                   (webkit:webkit-website-data-manager-disk-cache-directory data-manager)
-                   (webkit:webkit-website-data-manager-hsts-cache-directory data-manager)
-                   #+webkit2-tracking
-                   (webkit:webkit-website-data-manager-itp-directory data-manager)
-                   (webkit:webkit-website-data-manager-local-storage-directory data-manager)
-                   (webkit:webkit-website-data-manager-offline-application-cache-directory data-manager)))
-      (sera:and-let* ((directory (ignore-errors (pathname directory))))
-        (uiop:delete-directory-tree directory)))))
+(define-ffi-method ffi-buffer-clear-cache ((buffer gtk-buffer))
+  (incf webkit::callback-counter)
+  (push (webkit::make-callback :id webkit::callback-counter :web-view (gtk-object buffer))
+        webkit::callbacks)
+  (webkit:webkit-web-context-clear-cache
+   (webkit:webkit-web-view-web-context (gtk-object buffer)))
+  (webkit:webkit-website-data-manager-clear
+   (webkit:webkit-web-view-get-website-data-manager (gtk-object buffer))
+   :webkit-website-data-all
+   0
+   (cffi:null-pointer)
+   (cffi:callback clear-do-nothing-callback)
+   (cffi:make-pointer webkit::callback-counter)))
 
 (define-ffi-method ffi-minibuffer-evaluate-javascript ((window gtk-window) javascript)
   (webkit2:webkit-web-view-evaluate-javascript (minibuffer-view window) javascript))

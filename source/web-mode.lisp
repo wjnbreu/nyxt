@@ -395,9 +395,7 @@ Otherwise go forward to the only child."
 Doesn't delete history, bookmarks, auto-mode rules, because these are
 stored separately from renderer data."
   (if-confirm ("Clear the cache? This can log you out from websites and slow them down a bit.")
-              (progn
-                (ffi-buffer-clear-cache (current-buffer))
-                (ffi-buffer-delete-renderer-data (current-buffer)))))
+              (ffi-buffer-clear-cache (current-buffer))))
 
 (defmethod nyxt:on-signal-notify-uri ((mode web-mode) url)
   (declare (type quri:uri url))
